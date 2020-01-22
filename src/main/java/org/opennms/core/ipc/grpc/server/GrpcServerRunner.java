@@ -31,21 +31,40 @@ package org.opennms.core.ipc.grpc.server;
 import java.io.IOException;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-// Test
 public class GrpcServerRunner {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GrpcIpcServer.class);
 
     public static void main(String[] args) {
+        String bootstrapServers = args.length > 0 ? args[0] : "localhost:9092";
         System.setProperty(String.format("%s%s", GrpcServerConstants.KAFKA_CONSUMER_SYS_PROP_PREFIX,
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), "localhost:9092");
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), bootstrapServers);
         System.setProperty(String.format("%s%s", GrpcServerConstants.KAFKA_PRODUCER_SYS_PROP_PREFIX,
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), "localhost:9092");
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), bootstrapServers);
         GrpcIpcServer grpcIpcServer = new GrpcIpcServer();
+        // Add shutdown hook.
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                System.err.println("shutting down gRPC server");
+                grpcIpcServer.stop();
+                System.err.println("gRPC server shut down");
+            }
+        });
         try {
             grpcIpcServer.start();
+            LOG.info("gRPC server started");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Encountered exception while starting gRPC server", e);
         }
+        try {
+            grpcIpcServer.blockUntilShutdown();
+        } catch (InterruptedException e) {
+            LOG.error("gRPC server got interrupted", e);
+        }
+
     }
 }

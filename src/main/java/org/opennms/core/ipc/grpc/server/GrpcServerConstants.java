@@ -35,6 +35,8 @@ public interface GrpcServerConstants {
 
     String TOPIC_NAME_AT_LOCATION = "%s.%s.%s";
     String TOPIC_NAME_WITHOUT_LOCATION = "%s.%s";
+    String SINK_TOPIC_NAME_WITHOUT_LOCATION = "%s.%s.%s";
+    String SINK_MODULE_PREFIX = "Sink";
     String OPENNMS_INSTANCE_ID_SYS_PROP = "org.opennms.instance.id";
     String DEFAULT_INSTANCE_ID = "OpenNMS";
     String KAFKA_PRODUCER_SYS_PROP_PREFIX = "org.opennms.core.ipc.grpc.kafa.producer.";
@@ -102,6 +104,6 @@ public interface GrpcServerConstants {
 
 
     static String getSinkTopic(String module) {
-        return String.format(TOPIC_NAME_WITHOUT_LOCATION, getOpenNMSInstanceId(), module);
+        return String.format(SINK_TOPIC_NAME_WITHOUT_LOCATION, getOpenNMSInstanceId(), SINK_MODULE_PREFIX, module);
     }
 }

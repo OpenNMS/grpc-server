@@ -41,7 +41,6 @@ import static org.opennms.core.ipc.grpc.server.GrpcServerConstants.SERVER_CERTIF
 import static org.opennms.core.ipc.grpc.server.GrpcServerConstants.TLS_ENABLED;
 import static org.opennms.core.ipc.grpc.server.GrpcServerConstants.getOpenNMSInstanceId;
 import static org.opennms.core.ipc.grpc.server.GrpcServerConstants.getProperties;
-import static org.opennms.core.ipc.grpc.server.GrpcServerConstants.getSinkTopic;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +82,7 @@ import org.opennms.core.ipc.grpc.common.RpcMessageProto;
 import org.opennms.core.ipc.grpc.common.RpcRequestProto;
 import org.opennms.core.ipc.grpc.common.RpcResponseProto;
 import org.opennms.core.ipc.grpc.common.SinkMessage;
+import org.opennms.core.ipc.grpc.common.SinkMessageProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,6 +182,12 @@ public class GrpcIpcServer {
                 SslProvider.OPENSSL);
     }
 
+    public void blockUntilShutdown() throws InterruptedException {
+        if (server != null) {
+            server.awaitTermination();
+        }
+    }
+
     public void stop() {
         if (server != null) {
             server.shutdown();
@@ -211,7 +217,12 @@ public class GrpcIpcServer {
                         addRpcHandler(rpcResponseProto.getLocation(), rpcResponseProto.getSystemId(), responseObserver);
                         startConsumingForLocation(rpcResponseProto.getLocation());
                     } else {
-                        transformAndSendResponse(rpcResponseProto);
+                        try {
+                            transformAndSendResponse(rpcResponseProto);
+                        } catch (Throwable e) {
+                            LOG.error("Encountered exception while sending rpc response {} to kafka", rpcResponseProto, e);
+                        }
+
                     }
                 }
 
@@ -232,11 +243,11 @@ public class GrpcIpcServer {
             return new StreamObserver<SinkMessage>() {
 
                 public void onNext(SinkMessage sinkMessage) {
-                    // TODO: Transform and send sink message.
-                    String moduleName = sinkMessage.getModuleId();
-                    ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>
-                            (getSinkTopic(moduleName), sinkMessage.getMessageId(), sinkMessage.toByteArray());
-                    producer.send(record);
+                    try {
+                        transformAndSendSinkMessage(sinkMessage);
+                    } catch (Throwable e) {
+                        LOG.error("Encountered exception while sending sink message {} to kafka", sinkMessage, e);
+                    }
                 }
 
                 public void onError(Throwable t) {
@@ -249,6 +260,39 @@ public class GrpcIpcServer {
             };
         }
 
+    }
+
+    private void transformAndSendSinkMessage(SinkMessage sinkMessage) {
+        SinkMessageProto.Builder builder = SinkMessageProto.newBuilder()
+                .setMessageId(sinkMessage.getMessageId());
+        final ByteString content = sinkMessage.getContent();
+        String response = content.toStringUtf8();
+        byte[] messageInBytes = response.getBytes();
+        int totalChunks = IntMath.divide(messageInBytes.length, MAX_BUFFER_SIZE_CONFIGURED, RoundingMode.UP);
+        for (int chunk = 0; chunk < totalChunks; chunk++) {
+            // Calculate remaining bufferSize for each chunk.
+            int bufferSize = GrpcServerConstants.getBufferSize(messageInBytes.length, MAX_BUFFER_SIZE_CONFIGURED, chunk);
+
+            ByteString byteString = ByteString.copyFrom(messageInBytes, chunk * MAX_BUFFER_SIZE_CONFIGURED, bufferSize);
+            SinkMessageProto sinkMessageProto = builder.setCurrentChunkNumber(chunk)
+                    .setContent(byteString)
+                    .setCurrentChunkNumber(chunk)
+                    .setTotalChunks(totalChunks)
+                    .build();
+            sendSinkMessageToKafka(sinkMessageProto, GrpcServerConstants.getSinkTopic(sinkMessage.getModuleId()));
+        }
+
+    }
+
+    private void sendSinkMessageToKafka(SinkMessageProto sinkMessage, String topic) {
+        String messageId = sinkMessage.getMessageId();
+        final ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>(
+                topic, messageId, sinkMessage.toByteArray());
+        producer.send(producerRecord, (recordMetadata, e) -> {
+            if (e != null) {
+                LOG.error(" Sink message {} with id {} couldn't be sent to Kafka", sinkMessage, messageId, e);
+            }
+        });
     }
 
     private void startConsumingForLocation(String location) {
@@ -274,26 +318,28 @@ public class GrpcIpcServer {
                 .setModuleId(rpcResponseProto.getModuleId())
                 .setSystemId(rpcResponseProto.getSystemId());
         final ByteString content = rpcResponseProto.getRpcContent();
-        int totalChunks = IntMath.divide(content.size(), MAX_BUFFER_SIZE_CONFIGURED, RoundingMode.UP);
+        String response = content.toStringUtf8();
+        byte[] messageInBytes = response.getBytes();
+        int totalChunks = IntMath.divide(messageInBytes.length, MAX_BUFFER_SIZE_CONFIGURED, RoundingMode.UP);
         for (int chunk = 0; chunk < totalChunks; chunk++) {
             // Calculate remaining bufferSize for each chunk.
-            byte[] messageInBytes = content.toByteArray();
             int bufferSize = GrpcServerConstants.getBufferSize(messageInBytes.length, MAX_BUFFER_SIZE_CONFIGURED, chunk);
 
             ByteString byteString = ByteString.copyFrom(messageInBytes, chunk * MAX_BUFFER_SIZE_CONFIGURED, bufferSize);
             RpcMessageProto rpcMessage = builder.setCurrentChunkNumber(chunk)
                     .setRpcContent(byteString)
+                    .setCurrentChunkNumber(chunk)
+                    .setTotalChunks(totalChunks)
                     .build();
-            sendMessageToKafka(rpcMessage, GrpcServerConstants.getResponseTopic());
+            sendRpcResponseToKafka(rpcMessage, GrpcServerConstants.getResponseTopic());
         }
 
     }
 
-    private void sendMessageToKafka(RpcMessageProto rpcMessage, String topic) {
+    private void sendRpcResponseToKafka(RpcMessageProto rpcMessage, String topic) {
         String rpcId = rpcMessage.getRpcId();
         final ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>(
                 topic, rpcMessage.getRpcId(), rpcMessage.toByteArray());
-
         producer.send(producerRecord, (recordMetadata, e) -> {
             if (e != null) {
                 LOG.error(" RPC response {} with id {} couldn't be sent to Kafka", rpcMessage, rpcId, e);
@@ -376,14 +422,16 @@ public class GrpcIpcServer {
 
         @Override
         public void run() {
+
+            String requestTopic = GrpcServerConstants.getRequestTopicAtLocation(location);
+            consumer.subscribe(Arrays.asList(requestTopic));
+            LOG.info("subscribed to topic {}", requestTopic);
             while (!closed.get()) {
                 try {
-                    String requestTopic = GrpcServerConstants.getRequestTopicAtLocation(location);
-                    consumer.subscribe(Arrays.asList(requestTopic));
-                    System.out.println("subscribed to " + requestTopic);
+
                     ConsumerRecords<String, byte[]> records = consumer.poll(java.time.Duration.ofMillis(Long.MAX_VALUE));
                     for (ConsumerRecord<String, byte[]> record : records) {
-                        System.out.println(record);
+
                         RpcMessageProto rpcMessage = RpcMessageProto.parseFrom(record.value());
                         ByteString rpcContent = rpcMessage.getRpcContent();
                         String rpcId = rpcMessage.getRpcId();
@@ -417,7 +465,7 @@ public class GrpcIpcServer {
                     .setRpcId(rpcMessageProto.getRpcId())
                     .setModuleId(rpcMessageProto.getModuleId())
                     .setExpirationTime(rpcMessageProto.getExpirationTime())
-                    .setRpcContent(rpcMessageProto.getRpcContent())
+                    .setRpcContent(rpcContent)
                     .setLocation(location);
 
             if (!Strings.isNullOrEmpty(rpcMessageProto.getSystemId())) {
