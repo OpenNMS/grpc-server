@@ -423,6 +423,7 @@ public class GrpcIpcServer {
         @Override
         public void run() {
 
+            // This assumes OpenNMS is running with single-topic per location.
             String requestTopic = GrpcServerConstants.getRequestTopicAtLocation(location);
             consumer.subscribe(Arrays.asList(requestTopic));
             LOG.info("subscribed to topic {}", requestTopic);
