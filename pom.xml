@@ -8,7 +8,19 @@
   <artifactId>org.opennms.grpc.server</artifactId>
   <version>1.0-SNAPSHOT</version>
 
+  <properties>
+    <protocVersion>3.6.1</protocVersion>
+    <grpcVersion>1.24.0</grpcVersion>
+  </properties>
+
   <build>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.6.0</version>
+      </extension>
+    </extensions>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -28,6 +40,25 @@
             <id>attach-sources</id>
             <goals>
               <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Protobuf class-generator -->
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${protocVersion}:exe:${os.detected.classifier}</protocArtifact>
+          <pluginId>grpc-java</pluginId>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpcVersion}:exe:${os.detected.classifier}</pluginArtifact>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
             </goals>
           </execution>
         </executions>
@@ -84,17 +115,17 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty-shaded</artifactId>
-      <version>1.24.0</version>
+      <version>${grpcVersion}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-protobuf</artifactId>
-      <version>1.24.0</version>
+      <version>${grpcVersion}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-stub</artifactId>
-      <version>1.24.0</version>
+      <version>${grpcVersion}</version>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
