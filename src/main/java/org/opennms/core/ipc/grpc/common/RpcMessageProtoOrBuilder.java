@@ -1,8 +1,8 @@
 /*******************************************************************************
  * This file is part of OpenNMS(R).
  *
- * Copyright (C) 2019 The OpenNMS Group, Inc.
- * OpenNMS(R) is Copyright (C) 1999-2019 The OpenNMS Group, Inc.
+ * Copyright (C) 2020 The OpenNMS Group, Inc.
+ * OpenNMS(R) is Copyright (C) 1999-2020 The OpenNMS Group, Inc.
  *
  * OpenNMS(R) is a registered trademark of The OpenNMS Group, Inc.
  *
@@ -38,7 +38,7 @@ public interface RpcMessageProtoOrBuilder extends
   /**
    * <code>string rpc_id = 1;</code>
    */
-  String getRpcId();
+  java.lang.String getRpcId();
   /**
    * <code>string rpc_id = 1;</code>
    */
@@ -53,7 +53,7 @@ public interface RpcMessageProtoOrBuilder extends
   /**
    * <code>string system_id = 3;</code>
    */
-  String getSystemId();
+  java.lang.String getSystemId();
   /**
    * <code>string system_id = 3;</code>
    */
@@ -83,36 +83,36 @@ public interface RpcMessageProtoOrBuilder extends
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
   boolean containsTracingInfo(
-          String key);
+      java.lang.String key);
   /**
    * Use {@link #getTracingInfoMap()} instead.
    */
-  @Deprecated
-  java.util.Map<String, String>
+  @java.lang.Deprecated
+  java.util.Map<java.lang.String, java.lang.String>
   getTracingInfo();
   /**
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
-  java.util.Map<String, String>
+  java.util.Map<java.lang.String, java.lang.String>
   getTracingInfoMap();
   /**
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
 
-  String getTracingInfoOrDefault(
-          String key,
-          String defaultValue);
+  java.lang.String getTracingInfoOrDefault(
+      java.lang.String key,
+      java.lang.String defaultValue);
   /**
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
 
-  String getTracingInfoOrThrow(
-          String key);
+  java.lang.String getTracingInfoOrThrow(
+      java.lang.String key);
 
   /**
    * <code>string module_id = 8;</code>
    */
-  String getModuleId();
+  java.lang.String getModuleId();
   /**
    * <code>string module_id = 8;</code>
    */

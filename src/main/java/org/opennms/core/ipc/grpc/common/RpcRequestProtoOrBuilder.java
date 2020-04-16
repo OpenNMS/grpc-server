@@ -37,61 +37,55 @@ public interface RpcRequestProtoOrBuilder extends
 
   /**
    * <code>string rpc_id = 1;</code>
-   * @return The rpcId.
    */
-  String getRpcId();
+  java.lang.String getRpcId();
   /**
    * <code>string rpc_id = 1;</code>
-   * @return The bytes for rpcId.
    */
   com.google.protobuf.ByteString
       getRpcIdBytes();
 
   /**
    * <code>bytes rpc_content = 2;</code>
-   * @return The rpcContent.
    */
   com.google.protobuf.ByteString getRpcContent();
 
   /**
    * <code>string system_id = 3;</code>
-   * @return The systemId.
    */
-  String getSystemId();
+  java.lang.String getSystemId();
   /**
    * <code>string system_id = 3;</code>
-   * @return The bytes for systemId.
    */
   com.google.protobuf.ByteString
       getSystemIdBytes();
 
   /**
    * <code>string location = 4;</code>
-   * @return The location.
    */
-  String getLocation();
+  java.lang.String getLocation();
   /**
    * <code>string location = 4;</code>
-   * @return The bytes for location.
    */
   com.google.protobuf.ByteString
       getLocationBytes();
 
   /**
    * <code>string module_id = 5;</code>
-   * @return The moduleId.
    */
-  String getModuleId();
+  java.lang.String getModuleId();
   /**
    * <code>string module_id = 5;</code>
-   * @return The bytes for moduleId.
    */
   com.google.protobuf.ByteString
       getModuleIdBytes();
 
   /**
+   * <pre>
+   * absolute time elapsed since the epoch in msec.
+   * </pre>
+   *
    * <code>uint64 expiration_time = 6;</code>
-   * @return The expirationTime.
    */
   long getExpirationTime();
 
@@ -103,29 +97,29 @@ public interface RpcRequestProtoOrBuilder extends
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
   boolean containsTracingInfo(
-          String key);
+      java.lang.String key);
   /**
    * Use {@link #getTracingInfoMap()} instead.
    */
-  @Deprecated
-  java.util.Map<String, String>
+  @java.lang.Deprecated
+  java.util.Map<java.lang.String, java.lang.String>
   getTracingInfo();
   /**
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
-  java.util.Map<String, String>
+  java.util.Map<java.lang.String, java.lang.String>
   getTracingInfoMap();
   /**
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
 
-  String getTracingInfoOrDefault(
-          String key,
-          String defaultValue);
+  java.lang.String getTracingInfoOrDefault(
+      java.lang.String key,
+      java.lang.String defaultValue);
   /**
    * <code>map&lt;string, string&gt; tracing_info = 7;</code>
    */
 
-  String getTracingInfoOrThrow(
-          String key);
+  java.lang.String getTracingInfoOrThrow(
+      java.lang.String key);
 }

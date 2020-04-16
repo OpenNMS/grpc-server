@@ -82,7 +82,7 @@ import org.opennms.core.ipc.grpc.common.RpcMessageProto;
 import org.opennms.core.ipc.grpc.common.RpcRequestProto;
 import org.opennms.core.ipc.grpc.common.RpcResponseProto;
 import org.opennms.core.ipc.grpc.common.SinkMessage;
-import org.opennms.core.ipc.grpc.common.SinkMessageProto;
+import org.opennms.core.ipc.grpc.common.SinkMessageProtos.SinkMessageProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

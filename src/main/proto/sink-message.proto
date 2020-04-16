@@ -1,0 +1,22 @@
+// Source:
+// https://github.com/OpenNMS/opennms/blob/opennms-26.0.0-1/core/ipc/sink/common/src/main/resources/sink-message.proto
+// Changes:
+// - Java Package changed
+// - Renamed from SinkMessage to SinkMessageProto
+
+syntax = "proto2";
+option java_package = "org.opennms.core.ipc.grpc.common";
+option java_outer_classname = "SinkMessageProtos";
+
+message TracingInfo {
+required string key = 1;
+required string value = 2;
+}
+
+message SinkMessageProto {
+required string message_id = 1;
+required bytes  content = 2;
+optional int32  current_chunk_number = 5;
+optional int32  total_chunks = 6;
+repeated TracingInfo tracing_info = 7;
+}

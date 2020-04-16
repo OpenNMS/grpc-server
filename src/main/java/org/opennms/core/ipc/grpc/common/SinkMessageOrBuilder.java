@@ -37,77 +37,80 @@ public interface SinkMessageOrBuilder extends
 
   /**
    * <code>string message_id = 1;</code>
-   * @return The messageId.
    */
-  String getMessageId();
+  java.lang.String getMessageId();
   /**
    * <code>string message_id = 1;</code>
-   * @return The bytes for messageId.
    */
   com.google.protobuf.ByteString
       getMessageIdBytes();
 
   /**
    * <code>bytes content = 2;</code>
-   * @return The content.
    */
   com.google.protobuf.ByteString getContent();
 
   /**
-   * <code>string location = 3;</code>
-   * @return The location.
+   * <code>string system_id = 3;</code>
    */
-  String getLocation();
+  java.lang.String getSystemId();
   /**
-   * <code>string location = 3;</code>
-   * @return The bytes for location.
+   * <code>string system_id = 3;</code>
+   */
+  com.google.protobuf.ByteString
+      getSystemIdBytes();
+
+  /**
+   * <code>string location = 4;</code>
+   */
+  java.lang.String getLocation();
+  /**
+   * <code>string location = 4;</code>
    */
   com.google.protobuf.ByteString
       getLocationBytes();
 
   /**
-   * <code>string module_id = 4;</code>
-   * @return The moduleId.
+   * <code>string module_id = 5;</code>
    */
-  String getModuleId();
+  java.lang.String getModuleId();
   /**
-   * <code>string module_id = 4;</code>
-   * @return The bytes for moduleId.
+   * <code>string module_id = 5;</code>
    */
   com.google.protobuf.ByteString
       getModuleIdBytes();
 
   /**
-   * <code>map&lt;string, string&gt; tracing_info = 5;</code>
+   * <code>map&lt;string, string&gt; tracing_info = 6;</code>
    */
   int getTracingInfoCount();
   /**
-   * <code>map&lt;string, string&gt; tracing_info = 5;</code>
+   * <code>map&lt;string, string&gt; tracing_info = 6;</code>
    */
   boolean containsTracingInfo(
-          String key);
+      java.lang.String key);
   /**
    * Use {@link #getTracingInfoMap()} instead.
    */
-  @Deprecated
-  java.util.Map<String, String>
+  @java.lang.Deprecated
+  java.util.Map<java.lang.String, java.lang.String>
   getTracingInfo();
   /**
-   * <code>map&lt;string, string&gt; tracing_info = 5;</code>
+   * <code>map&lt;string, string&gt; tracing_info = 6;</code>
    */
-  java.util.Map<String, String>
+  java.util.Map<java.lang.String, java.lang.String>
   getTracingInfoMap();
   /**
-   * <code>map&lt;string, string&gt; tracing_info = 5;</code>
+   * <code>map&lt;string, string&gt; tracing_info = 6;</code>
    */
 
-  String getTracingInfoOrDefault(
-          String key,
-          String defaultValue);
+  java.lang.String getTracingInfoOrDefault(
+      java.lang.String key,
+      java.lang.String defaultValue);
   /**
-   * <code>map&lt;string, string&gt; tracing_info = 5;</code>
+   * <code>map&lt;string, string&gt; tracing_info = 6;</code>
    */
 
-  String getTracingInfoOrThrow(
-          String key);
+  java.lang.String getTracingInfoOrThrow(
+      java.lang.String key);
 }
