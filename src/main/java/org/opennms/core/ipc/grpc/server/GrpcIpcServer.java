@@ -95,6 +95,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.ByteString;
 
 import io.grpc.Server;
+import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
+import io.grpc.services.HealthStatusManager;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth;
@@ -126,6 +128,8 @@ public class GrpcIpcServer {
     private Multimap<String, StreamObserver<RpcRequestProto>> rpcHandlerByLocation = LinkedListMultimap.create();
     // Maintains the state of iteration for the list of minions for a given location.
     private Map<Collection<StreamObserver<RpcRequestProto>>, Iterator<StreamObserver<RpcRequestProto>>> rpcHandlerIteratorMap = new HashMap<>();
+    // Health Manager
+    private HealthStatusManager healthStatusManager = new HealthStatusManager();
 
     public void start() throws IOException {
         boolean tlsEnabled = Boolean.getBoolean(TLS_ENABLED);
@@ -134,6 +138,7 @@ public class GrpcIpcServer {
 
         NettyServerBuilder serverBuilder = NettyServerBuilder.forAddress(new InetSocketAddress(port))
                 .addService(new IpcServer())
+                .addService(healthStatusManager.getHealthService())
                 .maxInboundMessageSize(maxInboundMessageSize);
         if (tlsEnabled) {
             SslContextBuilder sslContextBuilder = getSslContextBuilder();
@@ -161,6 +166,7 @@ public class GrpcIpcServer {
             }
         });
         server.start();
+        healthStatusManager.setStatus("", ServingStatus.SERVING);
     }
 
 
@@ -190,6 +196,7 @@ public class GrpcIpcServer {
 
     public void stop() {
         if (server != null) {
+            healthStatusManager.enterTerminalState();
             server.shutdown();
         }
         consumerRunnerByLocation.forEach((location, consumerRunner) -> {
