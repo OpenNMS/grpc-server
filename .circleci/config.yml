@@ -129,8 +129,8 @@ jobs:
           name: Load Docker Container Image file
           command: |
             docker image load -i target/grpc-server.oci
-            docker tag grpc-server:latest docker.io/indigo/grpc-server:$(cat version.txt)
-            docker push docker.io/indigo/grpc-server:$(cat version.txt)
+            docker tag grpc-server:latest docker.io/opennms/grpc-server:$(cat version.txt)
+            docker push docker.io/opennms/grpc-server:$(cat version.txt)
 
   publish-github:
       executor: go-executor
@@ -142,7 +142,7 @@ jobs:
             command: |
               go get -u github.com/tcnksm/ghr
         - run:
-            name: Gather files for release-27.x
+            name: Gather files for release
             command: |
               mkdir gh-release
               zip -9 gh-release/grpc-ipc-server.jar.zip target/grpc-ipc-server.jar
