@@ -1,15 +1,19 @@
-FROM maven:3.6-jdk-11 AS builder
-WORKDIR /app
-ENV GRPC_HEALTH_PROBE_VERSION=v0.3.2
+FROM alpine AS downloader
+
+ARG GRPC_HEALTH_PROBE_VERSION=v0.3.2
+
+RUN apk add --no-cache wget
 RUN wget -qOgrpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
-    git clone https://github.com/OpenNMS/grpc-server.git && \
-    cd grpc-server && \
-    mvn package
+    chmod 755 grpc_health_probe
 
 FROM openjdk:11.0-jre-slim
-COPY --from=builder /app/grpc-server/target/grpc-ipc-server.jar /
-COPY --from=builder /app/grpc_health_probe /bin
+
+RUN useradd grpc
+
+COPY --from=downloader /grpc_health_probe /bin
+COPY target/grpc-ipc-server.jar /
 COPY docker-entrypoint.sh /
-RUN useradd grpc && chmod +x /bin/grpc_health_probe
+
 USER grpc
+
 ENTRYPOINT [ "/docker-entrypoint.sh" ]

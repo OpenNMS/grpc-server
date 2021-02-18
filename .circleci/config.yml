@@ -1,0 +1,150 @@
+version: 2.1
+
+executors:
+  docker-executor:
+    docker:
+      - image: docker:stable-git
+  maven-executor:
+    docker:
+      - image: opennms/maven:11.0.9.11-3.6.3-b5957
+  go-executor:
+    docker:
+      - image: circleci/golang
+
+commands:
+  dockerhub-login:
+    description: "Connect to DockerHub"
+    steps:
+      - run:
+          name: Login to DockerHub
+          command: |
+            docker login -u ${CONTAINER_REGISTRY_LOGIN} -p ${CONTAINER_REGISTRY_PASS}
+
+workflows:
+  build:
+    jobs:
+      - build
+      - package:
+          requires:
+            - build
+      - oci-image:
+          context:
+            - no42-credentials
+          requires:
+            - build
+      - publish-github:
+          context:
+            - no42-credentials
+          filters:
+            branches:
+              only:
+                - /^release-.*/
+          requires:
+            - package
+      - publish-dockerhub:
+          context:
+            - no42-credentials
+          filters:
+            branches:
+              only:
+                - /^release-.*/
+          requires:
+            - oci-image
+
+jobs:
+  build:
+    executor: maven-executor
+    steps:
+      - checkout
+      - restore_cache:
+          key: grpc-server-repository-{{ checksum "pom.xml" }}
+      - run:
+          name: Generate version number for this build
+          command: |
+            BRANCH_TAG=$(echo ${CIRCLE_BRANCH/release-/} | tr '[:upper:]' '[:lower:]')
+            echo "export VERSION=${BRANCH_TAG/\//-}-b${CIRCLE_BUILD_NUM}" >> ${BASH_ENV}
+      - run:
+          name: Compile and run tests
+          command: |
+            make compile
+      - save_cache:
+          key: grpc-server-repository-{{ checksum "pom.xml" }}
+          paths:
+            - ~/.m2
+      - run:
+          name: Persist version number
+          command: |
+            echo ${VERSION} > version.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project
+
+  package:
+    executor: maven-executor
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Package Java archive
+          command: |
+            make package
+      - store_artifacts:
+          path: target/grpc-ipc-server.jar
+      - persist_to_workspace:
+          root: ~/
+          paths: project/target
+
+  oci-image:
+    executor: docker-executor
+    steps:
+      - attach_workspace:
+          at: ~/
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Build Docker Container Image
+          command: |
+            docker build -t grpc-server .
+      - run:
+          name: Persist Docker Container Image
+          command: |
+            docker image save grpc-server -o target/grpc-server.oci
+      - store_artifacts:
+          path: target/grpc-server.oci
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/target/grpc-server.oci
+
+  publish-dockerhub:
+    executor: docker-executor
+    steps:
+      - attach_workspace:
+          at: ~/
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - dockerhub-login
+      - run:
+          name: Load Docker Container Image file
+          command: |
+            docker image load -i target/grpc-server.oci
+            docker tag grpc-server:latest docker.io/opennms/grpc-server:$(cat version.txt)
+            docker push docker.io/opennms/grpc-server:$(cat version.txt)
+
+  publish-github:
+      executor: go-executor
+      steps:
+        - attach_workspace:
+            at: ~/
+        - run:
+            name: Install ghr tool to create GitHub releases and upload artifacts
+            command: |
+              go get -u github.com/tcnksm/ghr
+        - run:
+            name: Gather files for release
+            command: |
+              mkdir gh-release
+              zip -9 gh-release/grpc-ipc-server.jar.zip target/grpc-ipc-server.jar
+              tar czf gh-release/grpc-ipc-server.jar.tar.gz target/grpc-ipc-server.jar
+              ghr -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} $(cat version.txt) gh-release
