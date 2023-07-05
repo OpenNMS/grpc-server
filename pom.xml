@@ -10,7 +10,7 @@
 
   <properties>
     <protocVersion>3.6.1</protocVersion>
-    <grpcVersion>1.24.0</grpcVersion>
+    <grpcVersion>1.53.0</grpcVersion>
   </properties>
 
   <build>
